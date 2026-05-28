@@ -101,6 +101,7 @@
 </template>
 <script setup lang="ts">
 import { ref, watch, defineProps, defineEmits, computed } from 'vue';
+import { usePage } from '@inertiajs/vue3';
 
 interface Brand {
   id?: number;
@@ -118,9 +119,12 @@ const props = defineProps<{
 
 const emit = defineEmits(['submit', 'close']);
 
+const page = usePage();
+const currentUser = page.props.auth.user as { name: string; role: string } | undefined;
+
 const form = ref({ 
   nama_brand: '', 
-  pemilik: '', 
+  pemilik: currentUser?.name || '', 
   deskripsi: '',
   logo: null as File | null
 });
@@ -148,7 +152,7 @@ watch(() => props.brand, (val) => {
   } else {
     form.value = { 
       nama_brand: '', 
-      pemilik: '', 
+      pemilik: currentUser?.name || '', 
       deskripsi: '',
       logo: null
     };
@@ -161,7 +165,7 @@ watch(() => props.open, (isOpen) => {
   if (!isOpen) {
     form.value = { 
       nama_brand: '', 
-      pemilik: '', 
+      pemilik: currentUser?.name || '', 
       deskripsi: '',
       logo: null
     };

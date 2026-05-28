@@ -14,10 +14,17 @@ class BrandController extends Controller
      */
     public function index()
     {
-        $brands = Brand::all();
+        $user = auth()->user();
+
+        if ($user->isBranOwner()) {
+            $brands = $user->brands()->get();
+        } else {
+            $brands = Brand::all();
+        }
+
         return Inertia::render('brand/BrandList', [
             'brands' => $brands,
-            'canEdit' => auth()->user()->canEdit(),
+            'canEdit' => $user->canEdit(),
         ]);
     }
 
@@ -26,10 +33,17 @@ class BrandController extends Controller
      */
     public function create()
     {
-        $brands = Brand::all();
+        $user = auth()->user();
+
+        if ($user->isBranOwner()) {
+            $brands = $user->brands()->get();
+        } else {
+            $brands = Brand::all();
+        }
+
         return Inertia::render('brand/BrandForm', [
             'brands' => $brands,
-            'canEdit' => auth()->user()->canEdit(),
+            'canEdit' => $user->canEdit(),
         ]);
     }
 
@@ -38,6 +52,8 @@ class BrandController extends Controller
      */
     public function store(Request $request)
     {
+        $user = auth()->user();
+
         $validated = $request->validate([
             'nama_brand' => 'required|string|max:255|unique:brands',
             'pemilik' => 'required|string|max:255',
@@ -50,12 +66,18 @@ class BrandController extends Controller
             $logoPath = $request->file('logo')->store('logos', 'public');
         }
 
-        Brand::create([
+        $data = [
             'nama_brand' => $validated['nama_brand'],
             'pemilik' => $validated['pemilik'],
             'deskripsi' => $validated['deskripsi'] ?? null,
             'logo_path' => $logoPath,
-        ]);
+        ];
+
+        if ($user->isBranOwner()) {
+            $data['user_id'] = $user->id;
+        }
+
+        Brand::create($data);
 
         return redirect()->route('brand.input')->with('success', 'Brand berhasil ditambahkan.');
     }
@@ -65,6 +87,11 @@ class BrandController extends Controller
      */
     public function show(Brand $brand)
     {
+        $user = auth()->user();
+        if ($user->isBranOwner() && $brand->user_id !== $user->id) {
+            abort(403, 'Anda tidak memiliki akses ke brand ini.');
+        }
+
         return Inertia::render('brand/BrandShow', [
             'brand' => $brand
         ]);
@@ -75,6 +102,11 @@ class BrandController extends Controller
      */
     public function edit(Brand $brand)
     {
+        $user = auth()->user();
+        if ($user->isBranOwner() && $brand->user_id !== $user->id) {
+            abort(403, 'Anda tidak memiliki akses ke brand ini.');
+        }
+
         return Inertia::render('brand/BrandEdit', [
             'brand' => $brand
         ]);
@@ -85,6 +117,12 @@ class BrandController extends Controller
      */
     public function update(Request $request, Brand $brand)
     {
+        $user = auth()->user();
+
+        if ($user->isBranOwner() && $brand->user_id !== $user->id) {
+            abort(403, 'Anda tidak memiliki akses ke brand ini.');
+        }
+
         $validated = $request->validate([
             'nama_brand' => 'required|string|max:255|unique:brands,nama_brand,' . $brand->id,
             'pemilik' => 'required|string|max:255',
@@ -99,11 +137,9 @@ class BrandController extends Controller
         ];
 
         if ($request->hasFile('logo')) {
-            // Delete old logo if exists
             if ($brand->logo_path && \Storage::disk('public')->exists($brand->logo_path)) {
                 \Storage::disk('public')->delete($brand->logo_path);
             }
-            // Store new logo
             $updateData['logo_path'] = $request->file('logo')->store('logos', 'public');
         }
 
@@ -117,11 +153,16 @@ class BrandController extends Controller
      */
     public function destroy(Brand $brand)
     {
-        // Delete logo file if exists
+        $user = auth()->user();
+
+        if ($user->isBranOwner() && $brand->user_id !== $user->id) {
+            abort(403, 'Anda tidak memiliki akses ke brand ini.');
+        }
+
         if ($brand->logo_path && \Storage::disk('public')->exists($brand->logo_path)) {
             \Storage::disk('public')->delete($brand->logo_path);
         }
-        
+
         $brand->delete();
 
         return redirect()->route('brand.input')->with('success', 'Brand berhasil dihapus.');

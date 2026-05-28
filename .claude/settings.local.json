@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(move:*)",
+      "Bash(mv:*)",
+      "Bash(bun run:*)",
+      "Bash(php artisan:*)",
+      "Bash(git add:*)",
+      "Bash(git rm:*)",
+      "Bash(where php)",
+      "Bash(php:*)",
+      "Bash(max key length is 1000 bytes\" error\n  * Compatible with MySQL < 5.7.7 and older hosting environments\n  * Maintains utf8mb4 charset support with shorter key lengths\n\n- Enhanced admin tools with MySQL key length diagnostic:\n  * New \"Fix MySQL Key Length\" button in Database section\n  * Automatic detection of AppServiceProvider configuration\n  * MySQL version detection and troubleshooting steps\n  * Guided solution steps for migration retry\n\n- Updated deployment documentation:\n  * Comprehensive MySQL key length error troubleshooting\n  * Multiple solution approaches (admin tools, manual, alternatives)\n  * Clear steps for fixing and retrying migrations\n  * Documentation for different hosting MySQL configurations\n\nThis resolves the common deployment migration error on shared hosting \nwith older MySQL versions or restrictive key length configurations.\n\n🤖 Generated with [Claude Code](https://claude.ai/code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git commit:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

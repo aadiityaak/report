@@ -53,6 +53,15 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
+        User::updateOrCreate(
+            ['email' => 'bran_owner@example.com'],
+            [
+                'name' => 'Bran Owner',
+                'password' => $defaultPassword,
+                'role' => 'bran_owner',
+            ]
+        );
+
         // Seeder untuk app settings
         $this->call(AppSettingSeeder::class);
         

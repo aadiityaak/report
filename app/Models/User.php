@@ -78,4 +78,20 @@ class User extends Authenticatable
     {
         return $this->role === 'owner';
     }
+
+    /**
+     * Check if user is Bran Owner
+     */
+    public function isBranOwner(): bool
+    {
+        return $this->role === 'bran_owner';
+    }
+
+    /**
+     * Get the brands owned by the user.
+     */
+    public function brands()
+    {
+        return $this->hasMany(Brand::class);
+    }
 }

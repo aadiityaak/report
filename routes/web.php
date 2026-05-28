@@ -25,37 +25,44 @@ Route::get('/', function () {
 
 
 Route::get('dashboard', function () {
-    $brands = \App\Models\Brand::all(['id', 'nama_brand', 'pemilik', 'logo_path']);
+    $user = auth()->user();
+
+    if ($user->isBranOwner()) {
+        $brands = $user->brands()->select(['id', 'nama_brand', 'pemilik', 'logo_path'])->get();
+    } else {
+        $brands = \App\Models\Brand::all(['id', 'nama_brand', 'pemilik', 'logo_path']);
+    }
+
     $transaksis = \App\Models\Transaksi::orderBy('tanggal', 'desc')->get();
     
     return Inertia::render('Dashboard', [
         'brands' => $brands,
         'transaksis' => $transaksis,
-        'userRole' => auth()->user()->role,
-        'canEdit' => auth()->user()->canEdit(),
+        'userRole' => $user->role,
+        'canEdit' => $user->canEdit(),
     ]);
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-// Brand routes - Owner can view but not edit, manajer/spv/karyawan can edit
-Route::middleware(['auth', 'verified', 'role:owner,manajer,spv,karyawan'])->group(function () {
+// Brand routes - Owner can view but not edit, manajer/spv/karyawan/bran_owner can edit
+Route::middleware(['auth', 'verified', 'role:owner,manajer,spv,karyawan,bran_owner'])->group(function () {
     Route::get('brand-list', [BrandController::class, 'index'])->name('brand.list');
     Route::get('brand-input', [BrandController::class, 'create'])->name('brand.input');
 });
 
 // Brand edit routes - require edit access (not Owner)
-Route::middleware(['auth', 'verified', 'role:manajer,spv,karyawan'])->group(function () {
+Route::middleware(['auth', 'verified', 'role:manajer,spv,karyawan,bran_owner'])->group(function () {
     Route::resource('brands', BrandController::class)->except(['index', 'create', 'show']);
     Route::post('brand-input', [BrandController::class, 'store'])->name('brand.store');
 });
 
-// Transaksi routes - Owner can view but not edit, manajer/spv/karyawan can edit
-Route::middleware(['auth', 'verified', 'role:owner,manajer,spv,karyawan'])->group(function () {
+// Transaksi routes - Owner can view but not edit, manajer/spv/karyawan/bran_owner can edit
+Route::middleware(['auth', 'verified', 'role:owner,manajer,spv,karyawan,bran_owner'])->group(function () {
     Route::get('transaksi-input', [TransaksiController::class, 'create'])->name('transaksi.input');
     Route::get('transaksi-list', [TransaksiController::class, 'index'])->name('transaksi.list');
 });
 
 // Transaksi edit routes - require edit access (not Owner)
-Route::middleware(['auth', 'verified', 'role:manajer,spv,karyawan'])->group(function () {
+Route::middleware(['auth', 'verified', 'role:manajer,spv,karyawan,bran_owner'])->group(function () {
     Route::resource('transaksis', TransaksiController::class)->except(['index', 'create', 'show']);
     Route::put('transaksis/{id}', [TransaksiController::class, 'update'])->name('transaksis.update');
     Route::post('transaksi-input', [TransaksiController::class, 'store'])->name('transaksi.store');

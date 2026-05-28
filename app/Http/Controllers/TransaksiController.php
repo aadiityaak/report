@@ -14,8 +14,9 @@ class TransaksiController extends Controller
      */
     public function index()
     {
+        $user = auth()->user();
         $transaksis = Transaksi::orderBy('tanggal', 'desc')->get();
-        $brands = Brand::all(['id', 'nama_brand', 'pemilik', 'logo_path'])
+        $brands = $this->getFilteredBrands($user)
             ->map(function ($brand) {
                 return [
                     'id' => $brand->id,
@@ -31,7 +32,7 @@ class TransaksiController extends Controller
         return Inertia::render('transaksi/TransaksiList', [
             'transaksis' => $transaksis,
             'brands' => $brands,
-            'canEdit' => auth()->user()->canEdit(),
+            'canEdit' => $user->canEdit(),
         ]);
     }
 
@@ -40,16 +41,17 @@ class TransaksiController extends Controller
      */
     public function create()
     {
-        $brands = Brand::all(['id', 'nama_brand', 'pemilik', 'logo_path'])
+        $user = auth()->user();
+        $brands = $this->getFilteredBrands($user)
             ->map(function ($brand) {
                 return [
                     'id' => $brand->id,
                     'nama_brand' => $brand->nama_brand,
                     'pemilik' => $brand->pemilik,
                     'logo_path' => $brand->logo_path,
-                    'namaBrand' => $brand->nama_brand, // For frontend compatibility
-                    'namaCV' => $brand->pemilik, // For frontend compatibility
-                    'logoPath' => $brand->logo_path // For frontend compatibility
+                    'namaBrand' => $brand->nama_brand,
+                    'namaCV' => $brand->pemilik,
+                    'logoPath' => $brand->logo_path
                 ];
             });
         $transaksis = Transaksi::orderBy('tanggal', 'desc')->get();
@@ -57,7 +59,7 @@ class TransaksiController extends Controller
         return Inertia::render('transaksi/TransaksiInput', [
             'brands' => $brands,
             'transaksis' => $transaksis,
-            'canEdit' => auth()->user()->canEdit(),
+            'canEdit' => $user->canEdit(),
         ]);
     }
 
@@ -97,8 +99,9 @@ class TransaksiController extends Controller
      */
     public function edit(string $id)
     {
+        $user = auth()->user();
         $transaksi = Transaksi::findOrFail($id);
-        $brands = Brand::all(['id', 'nama_brand', 'pemilik']);
+        $brands = $this->getFilteredBrands($user, ['id', 'nama_brand', 'pemilik']);
         
         return Inertia::render('transaksi/TransaksiEdit', [
             'transaksi' => $transaksi,
@@ -136,5 +139,17 @@ class TransaksiController extends Controller
         $transaksi->delete();
 
         return redirect()->route('transaksi.input')->with('success', 'Transaksi berhasil dihapus.');
+    }
+
+    /**
+     * Get brands filtered by user role.
+     */
+    private function getFilteredBrands($user, $columns = ['id', 'nama_brand', 'pemilik', 'logo_path'])
+    {
+        if ($user->isBranOwner()) {
+            return $user->brands()->select($columns)->get();
+        }
+
+        return Brand::select($columns)->get();
     }
 }
