@@ -64,7 +64,6 @@ Route::middleware(['auth', 'verified', 'role:owner,manajer,spv,karyawan,bran_own
 // Transaksi edit routes - require edit access (not Owner)
 Route::middleware(['auth', 'verified', 'role:manajer,spv,karyawan,bran_owner'])->group(function () {
     Route::resource('transaksis', TransaksiController::class)->except(['index', 'create', 'show']);
-    Route::put('transaksis/{id}', [TransaksiController::class, 'update'])->name('transaksis.update');
     Route::post('transaksi-input', [TransaksiController::class, 'store'])->name('transaksi.store');
 
     // App Settings routes

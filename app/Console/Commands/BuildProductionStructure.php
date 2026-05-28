@@ -69,11 +69,15 @@ class BuildProductionStructure extends Command
         ];
 
         $excludeDirs = [
-            'node_modules', '.git', 'tests', 'public',
+            'node_modules',
+            '.git',
+            'tests',
+            'public',
         ];
 
         $suffixExclude = [
-            '.log', '.md',
+            '.log',
+            '.md',
         ];
 
         $iterator = new \RecursiveIteratorIterator(
@@ -199,8 +203,8 @@ class BuildProductionStructure extends Command
             $content
         );
         $content = str_replace(
-            "\\$app = require_once __DIR__.'/../bootstrap/app.php';",
-            "\\$app = require_once __DIR__.'/../laravel/bootstrap/app.php';",
+            "\$app = require_once __DIR__.'/../bootstrap/app.php';",
+            "\$app = require_once __DIR__.'/../laravel/bootstrap/app.php';",
             $content
         );
 
