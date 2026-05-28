@@ -50,72 +50,79 @@ class BuildProductionStructure extends Command
 
     private function copyLaravelFiles(string $destination): void
     {
-        $excludePatterns = [
-            DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR,
-            DIRECTORY_SEPARATOR . 'node_modules' . DIRECTORY_SEPARATOR,
-            DIRECTORY_SEPARATOR . '.git' . DIRECTORY_SEPARATOR,
-            DIRECTORY_SEPARATOR . '.env',
-            DIRECTORY_SEPARATOR . 'dist' . DIRECTORY_SEPARATOR,
-            DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR,
-            DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'framework' . DIRECTORY_SEPARATOR . 'cache' . DIRECTORY_SEPARATOR,
-            DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'framework' . DIRECTORY_SEPARATOR . 'sessions' . DIRECTORY_SEPARATOR,
-            DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'framework' . DIRECTORY_SEPARATOR . 'views' . DIRECTORY_SEPARATOR,
-            DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR,
-            DIRECTORY_SEPARATOR . '.gitignore',
-            DIRECTORY_SEPARATOR . '.gitattributes',
-            DIRECTORY_SEPARATOR . '.editorconfig',
-            DIRECTORY_SEPARATOR . 'README.md',
-            DIRECTORY_SEPARATOR . 'composer.lock.backup',
-        ];
-
-        $excludeDirs = [
+        $topLevelExcludes = [
             'node_modules',
             '.git',
             'tests',
             'public',
+            'dist',
         ];
 
-        $suffixExclude = [
-            '.log',
-            '.md',
+        $storageSubExcludes = [
+            'logs',
+            'framework' . DIRECTORY_SEPARATOR . 'cache',
+            'framework' . DIRECTORY_SEPARATOR . 'sessions',
+            'framework' . DIRECTORY_SEPARATOR . 'views',
         ];
 
+        $items = scandir(base_path());
+        foreach ($items as $item) {
+            if ($item === '.' || $item === '..') {
+                continue;
+            }
+
+            $srcPath = base_path($item);
+
+            if (in_array($item, $topLevelExcludes)) {
+                continue;
+            }
+
+            $destPath = $destination . DIRECTORY_SEPARATOR . $item;
+
+            if ($item === 'storage') {
+                File::makeDirectory($destPath, 0755, true, true);
+                $this->copyDirectoryWithExclusions($srcPath, $destPath, $storageSubExcludes);
+            } elseif (is_dir($srcPath)) {
+                File::copyDirectory($srcPath, $destPath);
+            } elseif (is_file($srcPath)) {
+                $fileBasename = basename($item);
+                if (str_ends_with($fileBasename, '.md') || str_ends_with($fileBasename, '.log')) {
+                    continue;
+                }
+                if (in_array($fileBasename, ['.env', '.gitignore', '.gitattributes', '.editorconfig', 'composer.lock.backup'])) {
+                    continue;
+                }
+                File::copy($srcPath, $destPath);
+            }
+        }
+    }
+
+    private function copyDirectoryWithExclusions(string $source, string $destination, array $excludeRelativePaths): void
+    {
         $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator(base_path(), \RecursiveDirectoryIterator::SKIP_DOTS),
+            new \RecursiveDirectoryIterator($source, \RecursiveDirectoryIterator::SKIP_DOTS),
             \RecursiveIteratorIterator::SELF_FIRST
         );
 
         foreach ($iterator as $item) {
-            $relativePath = DIRECTORY_SEPARATOR . $iterator->getSubPathname();
+            $relativePath = $iterator->getSubPathname();
 
-            $shouldExclude = false;
-            foreach ($excludePatterns as $pattern) {
-                if (str_contains($relativePath, $pattern)) {
-                    $shouldExclude = true;
+            $shouldSkip = false;
+            foreach ($excludeRelativePaths as $excludePath) {
+                if (str_starts_with($relativePath, $excludePath)) {
+                    $shouldSkip = true;
                     break;
                 }
             }
 
-            if ($shouldExclude) {
+            if ($shouldSkip) {
                 if ($item->isDir()) {
                     $iterator->setMaxDepth(0);
                 }
                 continue;
             }
 
-            foreach ($excludeDirs as $dir) {
-                if ($item->isDir() && $item->getBasename() === $dir) {
-                    continue 2;
-                }
-            }
-
-            foreach ($suffixExclude as $suffix) {
-                if (str_ends_with($item->getBasename(), $suffix)) {
-                    continue 2;
-                }
-            }
-
-            $destPath = $destination . DIRECTORY_SEPARATOR . $iterator->getSubPathname();
+            $destPath = $destination . DIRECTORY_SEPARATOR . $relativePath;
 
             if ($item->isDir()) {
                 File::makeDirectory($destPath, 0755, true, true);
