@@ -13,10 +13,10 @@ Route::get('/', function () {
         'logo' => \App\Models\AppSetting::get('logo'),
         'favicon' => \App\Models\AppSetting::get('favicon'),
     ];
-    
+
     // Get brands for display on welcome page
     $brands = \App\Models\Brand::all(['id', 'nama_brand', 'pemilik', 'logo_path']);
-    
+
     return Inertia::render('Welcome', [
         'appSettings' => $appSettings,
         'brands' => $brands,
@@ -34,7 +34,7 @@ Route::get('dashboard', function () {
     }
 
     $transaksis = \App\Models\Transaksi::orderBy('tanggal', 'desc')->get();
-    
+
     return Inertia::render('Dashboard', [
         'brands' => $brands,
         'transaksis' => $transaksis,
@@ -66,12 +66,18 @@ Route::middleware(['auth', 'verified', 'role:manajer,spv,karyawan,bran_owner'])-
     Route::resource('transaksis', TransaksiController::class)->except(['index', 'create', 'show']);
     Route::put('transaksis/{id}', [TransaksiController::class, 'update'])->name('transaksis.update');
     Route::post('transaksi-input', [TransaksiController::class, 'store'])->name('transaksi.store');
-    
+
     // App Settings routes
     Route::get('settings/logo', [AppSettingController::class, 'logoSettings'])->name('settings.logo');
     Route::post('settings/logo', [AppSettingController::class, 'updateLogo'])->name('settings.logo.update');
     Route::delete('settings/logo', [AppSettingController::class, 'deleteLogo'])->name('settings.logo.delete');
 });
 
-require __DIR__.'/settings.php';
-require __DIR__.'/auth.php';
+// Admin routes - only manajer and owner can manage brand ownership
+Route::middleware(['auth', 'verified', 'role:manajer,owner'])->group(function () {
+    Route::get('admin/brand-ownership', [\App\Http\Controllers\Admin\BrandOwnerController::class, 'index'])->name('admin.brand-ownership');
+    Route::put('admin/brand-ownership/{brand}', [\App\Http\Controllers\Admin\BrandOwnerController::class, 'update'])->name('admin.brand-ownership.update');
+});
+
+require __DIR__ . '/settings.php';
+require __DIR__ . '/auth.php';
